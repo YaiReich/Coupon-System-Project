@@ -1,0 +1,84 @@
+package com.yair.entity;
+
+import org.hibernate.annotations.Type;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Set;
+import java.util.UUID;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@Builder
+@ToString
+@AllArgsConstructor
+public class Coupon {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+    @Type(type = "org.hibernate.type.UUIDCharType")
+    @Column(length = 36, updatable = false, unique = true)
+    private UUID uuid;
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    private Company company;
+    @Column(nullable = false)
+    private String title;
+    @Column(nullable = true)
+    private int category;
+    @Column(nullable = false)
+    private LocalDate startDate;
+    @Column(nullable = false)
+    private LocalDate endDate;
+    @Column(nullable = false)
+    private int amount;
+    private String description;
+    @Column(nullable = false)
+    private BigDecimal price;
+    private String imageUrl;
+    @ManyToMany(cascade = CascadeType.PERSIST)
+    @JoinTable(name = "customer_coupon",
+               joinColumns = @JoinColumn(name = "coupon_id"),
+               inverseJoinColumns = @JoinColumn(name = "customer_id"))
+    @ToString.Exclude
+    private Set<Customer> customer;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        Coupon coupon = (Coupon) o;
+
+        return uuid.equals(coupon.uuid);
+    }
+
+    @Override
+    public int hashCode() {
+        return uuid.hashCode();
+    }
+}
