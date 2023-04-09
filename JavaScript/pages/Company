@@ -1,0 +1,146 @@
+import {useEffect, useState} from "react";
+import CouponList from "../components/CouponList";
+import AddCoupon from "../components/AddCoupon";
+import {Button} from 'react-bootstrap';
+import {useSelector} from "react-redux";
+import UpdateUser from "../components/UpdateUser";
+
+const Company = () => {
+
+    const [loading, setLoading] = useState(false)
+    const [coupons, setCoupons] = useState([]);
+    const [sortType, setSortType] = useState("asc");
+    const reloaded = useSelector(state => state.reload);
+    const token = useSelector(state => state.auth.token)
+
+    const [currentVisibility, updateVisibility] = useState(false)
+    const [updateCompanyVisible, setUpdateCompanyVisible] = useState(false);
+
+    const fetchCoupons = () => {
+        setLoading(true)
+        fetch(`http://localhost:8080/api/company/all/${token}`)
+            .then((response) => {
+                if (response.ok)
+                    return response.json()
+
+                if (response.status === 404) {
+                    throw new Error("Resource not found!")
+                } else if (response.status === 500) {
+                    throw new Error("Something bad happened!")
+                }
+            })
+            .then((data) => {
+                setCoupons(data)
+            })
+            .catch((error) => {
+                console.log(error.message);
+            })
+            .finally(() => {
+                setLoading(false)
+            })
+    }
+
+    useEffect(() => {
+        fetchCoupons();
+    }, [reloaded]);
+
+    const sortByTitle = () => {
+        const sortedCoupons = [...coupons].sort((a, b) => a.title.localeCompare(b.title));
+        setCoupons(sortedCoupons);
+        setSortType("asc");
+    }
+
+    const sortByTitleReverse = () => {
+        const sortedCoupons = [...coupons].sort((a, b) => b.title.localeCompare(a.title));
+        setCoupons(sortedCoupons);
+        setSortType("desc");
+    }
+
+    const sortByStartDate = () => {
+        const sortedCoupons = [...coupons].sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+        setCoupons(sortedCoupons)
+    }
+
+    const sortByExpiryDate = () => {
+        const sortedCoupons = [...coupons].sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+        setCoupons(sortedCoupons)
+    }
+
+    let content = <h1>No Content.</h1>
+
+    if (loading) {
+        content = <h1>Loading...</h1>
+    } else if (coupons.length > 0) {
+        content = <CouponList coupons={coupons}/>
+    }
+
+    const toggleUpdateCompanyVisibility = () => {
+        setUpdateCompanyVisible((prev) => !prev);
+        updateVisibility(false);
+    };
+
+    const toggleAddCouponVisibility = () => {
+        updateVisibility(!currentVisibility)
+    }
+
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: '20px'
+        }}>
+            <div>
+                <Button variant="outline-warning" onClick={() => {
+                    fetchCoupons(token)
+                }} style={{
+                    margin: '10px',
+                    justifyContent: 'center',
+                    marginRight: '10px',
+                    borderRadius: '20px',
+                    fontWeight: 'bold',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase'
+                }}>Fetch</Button>
+            </div>
+            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                <Button variant="outline-warning" onClick={sortType === "asc" ? sortByTitleReverse : sortByTitle}
+                        style={{
+                            marginRight: '10px',
+                            borderRadius: '20px',
+                            fontWeight: 'bold',
+                            letterSpacing: '1px',
+                            textTransform: 'uppercase'
+                        }}>Sort by title {sortType === "asc" ? "(descending)" : "(ascending)"}</Button>
+                <Button variant="outline-warning" onClick={sortByStartDate} style={{
+                    marginRight: '10px',
+                    borderRadius: '20px',
+                    fontWeight: 'bold',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase'
+                }}>Sort by Start Date</Button>
+                <Button variant="outline-warning" onClick={sortByExpiryDate} style={{
+                    marginRight: '10px',
+                    borderRadius: '20px',
+                    fontWeight: 'bold',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase'
+                }}>Sort by Expiry Date</Button>
+            </div>
+
+            {content}
+
+            <Button variant="success" onClick={toggleAddCouponVisibility} style={{margin: '20px'}}>Toggle to add new
+                coupon</Button>
+            {currentVisibility && <AddCoupon token={token} style={{marginTop: '20px'}}/>}
+
+            <Button variant="success" onClick={toggleUpdateCompanyVisibility} style={{margin: '20px'}}>
+                update company email and password
+            </Button>
+            {updateCompanyVisible && <UpdateUser type="1" userType="company" style={{marginTop: '20px'}}/>}
+        </div>
+    )
+}
+
+export default Company;
