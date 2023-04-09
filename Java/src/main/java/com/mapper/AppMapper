@@ -1,0 +1,29 @@
+package com.yair.mapper;
+
+import com.yair.entity.Company;
+import com.yair.entity.Coupon;
+import com.yair.entity.Customer;
+import com.yair.web.dto.CompanyDto;
+import com.yair.web.dto.CouponDto;
+import com.yair.web.dto.CustomerDto;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper
+public interface AppMapper {
+    Customer map(CustomerDto dto);
+
+    CustomerDto map(Customer customer);
+
+    @Mapping(target = "startDate",
+             defaultExpression = "java(java.time.LocalDate.parse(\"2024-01-01\"))",
+      dateFormat = "yyyy-MM-dd")
+    Coupon map(CouponDto dto);
+
+    CouponDto map(Coupon coupon);
+
+    CompanyDto map(Company company);
+
+    Company map(CompanyDto dto);
+}
