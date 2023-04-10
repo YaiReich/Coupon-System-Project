@@ -1,0 +1,28 @@
+package com.yair.repository;
+
+import com.yair.entity.Company;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.transaction.Transactional;
+
+public interface CompanyRepository extends JpaRepository<Company,Long> {
+
+    Optional<Company> findByEmailAndPassword(String email,String password);
+
+    Optional<Company> findByUuid(UUID uuid);
+
+    @Modifying
+    @Transactional
+    @Query("update Company set email = :email where uuid = :uuid")
+    void updateEmailByUuid( UUID uuid,String email);
+
+    @Modifying
+    @Query("update Company set password = :password where uuid = :uuid")
+    void updatePasswordByUuid(String password, UUID uuid);
+}
