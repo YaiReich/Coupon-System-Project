@@ -1,0 +1,7 @@
+package com.yair.service.ex;
+
+public class InvalidCouponTitleException extends RuntimeException{
+    public InvalidCouponTitleException(String msg){
+        super(msg);
+    }
+}
