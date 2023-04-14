@@ -1,0 +1,23 @@
+package com.yair.service;
+
+import com.yair.web.dto.CompanyDto;
+import com.yair.web.dto.CouponDto;
+
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+public interface CompanyService {
+
+    Optional<CompanyDto> getCompany(UUID uuid);
+
+    CouponDto createNewCoupon(UUID uuid, CouponDto couponDto);
+
+    CouponDto updateCouponAmount(UUID uuid, long couponId, int amount);
+
+    Set<CouponDto> getAllCompanyCoupons(UUID uuid);
+
+    void updateEmail(String email, UUID uuid);
+
+    void updatePassword(String password, UUID uuid);
+}
