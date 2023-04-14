@@ -1,0 +1,112 @@
+package com.yair.service;
+
+import com.yair.entity.Company;
+import com.yair.mapper.AppMapper;
+import com.yair.repository.CompanyRepository;
+import com.yair.service.ex.InvalidDetailsException;
+import com.yair.service.ex.NoSuchCompanyException;
+import com.yair.service.ex.NoSuchCustomerException;
+import com.yair.web.dto.CompanyDto;
+import com.yair.web.dto.CouponDto;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class CompanyServiceImpl implements CompanyService {
+
+    private final CompanyRepository companyRepository;
+    private final CouponService couponService;
+    private final AppMapper mapper;
+
+    public CompanyServiceImpl(
+            CompanyRepository companyRepository, AppMapper mapper,
+            CouponService couponService) {
+        this.companyRepository = companyRepository;
+        this.mapper = mapper;
+        this.couponService = couponService;
+    }
+
+    @Override
+    public CouponDto createNewCoupon(UUID uuid, CouponDto coupon) {
+        return couponService.insert(coupon, uuid);
+    }
+
+    public CouponDto updateCouponAmount(UUID uuid, long couponId, int amount) {
+
+        return couponService.updateAmount(uuid, couponId, amount);
+    }
+
+    @Override
+    public Set<CouponDto> getAllCompanyCoupons(UUID uuid) {
+        Optional<Company> optionalCompany = companyRepository.findByUuid(uuid);
+
+        if (optionalCompany.isEmpty()) {
+            throw new NoSuchCustomerException(String.format("There was no company for %s",
+                                                            uuid));
+        }
+
+        Company company = optionalCompany.get();
+
+        return company.getCoupons()
+                      .stream()
+                      .map(mapper::map)
+                      .collect(Collectors.toSet());
+    }
+
+    @Override
+    @Transactional
+    public void updateEmail(String email, UUID uuid) {
+        Optional<CompanyDto> optCompany = getCompany(uuid);
+
+        if (optCompany.isPresent()) {
+            if (email != null) {
+                // Validate email format
+                if (!email.matches("^\\w+@[a-zA-Z_]+?\\.[a-zA-Z]{2,3}$")) {
+                    throw new InvalidDetailsException("Invalid email format");
+                }
+                try {
+                    companyRepository.updateEmailByUuid(uuid, email);
+                } catch (Exception e){
+                    System.out.println(e);
+                }
+            } else {
+                throw new InvalidDetailsException("Email can't be null");
+            }
+        } else {
+            throw new NoSuchCompanyException(String.format("There is no company with "
+                                                           + "this id %s", uuid));
+        }
+    }
+
+
+
+    @Override
+    public void updatePassword(String password, UUID uuid) {
+        Optional<CompanyDto> OptCompany = getCompany(uuid);
+
+        if (OptCompany.isPresent()) {
+            if (password != null) {
+                companyRepository.updatePasswordByUuid(password, uuid);
+            } else {
+                throw new InvalidDetailsException(String.format("Password can't be "
+                                                                + "null"));
+            }
+        } else {
+            throw new NoSuchCompanyException(String.format("There is no company with "
+                                                           + "this id %s", uuid));
+        }
+    }
+
+
+    @Override
+    public Optional<CompanyDto> getCompany(UUID uuid) {
+        return companyRepository.findByUuid(uuid)
+                                .map(mapper::map);
+    }
+}
