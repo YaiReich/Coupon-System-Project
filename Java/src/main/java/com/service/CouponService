@@ -1,0 +1,19 @@
+package com.yair.service;
+
+import com.yair.entity.Coupon;
+import com.yair.web.dto.CouponDto;
+
+import java.util.Set;
+import java.util.UUID;
+
+public interface CouponService {
+
+    CouponDto insert(CouponDto product, UUID uuid);
+
+    void deleteById(UUID uuid, long couponId);
+
+    CouponDto updateAmount(UUID uuid, long couponId, int amount);
+
+    Set<Coupon> searchCouponsByTitle(String title);
+
+}
