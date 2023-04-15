@@ -1,0 +1,132 @@
+package com.yair.service;
+
+import com.yair.entity.Company;
+import com.yair.entity.Coupon;
+import com.yair.mapper.AppMapper;
+import com.yair.repository.CompanyRepository;
+import com.yair.repository.CouponRepository;
+import com.yair.service.ex.InvalidCouponTitleException;
+import com.yair.service.ex.NegativePriceException;
+import com.yair.service.ex.NoSuchCouponException;
+import com.yair.service.ex.NoSuchCustomerException;
+import com.yair.web.dto.CouponDto;
+
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class CouponServiceImpl implements CouponService {
+
+    private final CouponRepository couponRepository;
+    private final AppMapper mapper;
+    private final CompanyRepository companyRepository;
+
+
+    @Override
+    public CouponDto insert(CouponDto dto, UUID companyUuid) {
+
+        UUID uuid = dto.getUuid();
+        BigDecimal price = dto.getPrice();
+        String title = dto.getTitle();
+
+        if (price == null) {
+            throw new IllegalStateException("Price is null");
+        }
+
+        if (price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new NegativePriceException(String.format("Negative price: %.2f",
+                                                           price));
+        }
+
+        if (title == null || title.isEmpty()) {
+            throw new InvalidCouponTitleException("Empty coupon title.");
+        }
+
+        Optional<Coupon> optCoupon = couponRepository.findByUuid(uuid);
+
+        Coupon coupon;
+
+        if (optCoupon.isPresent()) {
+            coupon = optCoupon.get();
+            coupon.setAmount(coupon.getAmount() + 1);
+        } else {
+            coupon = mapper.map(dto);
+
+            Optional<Company> optionalCompany = companyRepository.findByUuid(companyUuid);
+
+            if (optionalCompany.isEmpty()) {
+                throw new NoSuchCustomerException(String.format("There was no company for %s",
+                                                                uuid));
+            }
+
+            Company company = optionalCompany.get();
+            coupon.setCompany(company);
+        }
+
+        return mapper.map(couponRepository.save(coupon));
+    }
+
+    @Override
+    public void deleteById(UUID uuid, long couponId) {
+
+        Optional<Coupon> optionalCoupon = isCouponRelatedToCompany(uuid, couponId);
+
+        if (optionalCoupon.isEmpty()) {
+            throw new NoSuchCouponException("There was not related between the coupon "
+                                            + "and the company");
+        }
+
+        couponRepository.deleteById(couponId);
+    }
+
+    @Override
+    public CouponDto updateAmount(UUID companyUuid, long couponId, int amount) {
+
+        if (amount <= 0) {
+            throw new NoSuchCouponException("The quantity requested is small");
+        }
+
+        Optional<Coupon> optCoupon = isCouponRelatedToCompany(companyUuid, couponId);
+
+        if (optCoupon.isEmpty()) {
+            throw new NoSuchCouponException("There was not related between the coupon "
+                                            + "and the company");
+        }
+
+        Coupon coupon = optCoupon.get();
+        coupon.setAmount(amount);
+        return mapper.map(couponRepository.save(coupon));
+    }
+
+    @Override
+    public Set<Coupon> searchCouponsByTitle(String title) {
+        return couponRepository.findByTitle(title);
+    }
+
+
+    public Optional<Coupon> isCouponRelatedToCompany(UUID companyUuid, long couponId) {
+
+        Optional<Coupon> optCoupon = couponRepository.findById(couponId);
+        if (optCoupon.isPresent()) {
+            Coupon coupon = optCoupon.get();
+            if (coupon.getCompany()
+                      .getUuid()
+                      .equals(companyUuid)) {
+                return optCoupon;
+            }
+        }
+
+        return Optional.empty();
+    }
+}
+
+
+
+
