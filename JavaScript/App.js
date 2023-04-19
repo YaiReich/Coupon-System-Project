@@ -8,14 +8,6 @@ const App = () => {
 
     const token = useSelector(state => state.auth.token)
 
-    return (
-        <div className="App">
-            <NotificationContainer />
-            <Routes>
-                <Route path="/" element={token ? <Home /> : <Login />} />
-            </Routes>
-        </div>
-    );
 }
 
 export default App;
